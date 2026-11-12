@@ -33,3 +33,8 @@
 - [x] The static build completes with `pnpm build:static` and produces `dist/public/index.html`.
 - [x] The project includes the implementation plan, TODO, and project logo metadata needed for checkpointing.
 - [x] The final implementation is committed to `main` and prepared for the managed GitHub connection flow.
+
+## 7. Deliver a differentiated evidence-map frontend
+- [x] The homepage explains that OfferGuard connects a suspicious clause to the signal behind it and the verification action a student can take, rather than only returning a fake/safe label.
+- [x] The homepage includes a lightweight CSS 3D proof-trail visual with a document anchor, risk-signal nodes, connecting lines, and a next-action node.
+- [x] The 3D visual remains readable and contained at desktop and mobile widths without adding a heavyweight rendering dependency.

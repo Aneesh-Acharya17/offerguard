@@ -248,6 +248,33 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="evidence-section section-wrap" aria-labelledby="evidence-heading">
+          <div className="evidence-copy">
+            <div className="section-label"><span>WHY DIFFERENT</span> Evidence, not just a verdict</div>
+            <p className="mono-label">THE OFFERGUARD EVIDENCE MAP</p>
+            <h2 id="evidence-heading">See how one risky clause connects to your next move.</h2>
+            <p className="evidence-lede">Most checkers stop at “probably fake.” OfferGuard turns the warning into a small investigation: the clause, the signal behind it, and the safest way to verify it.</p>
+            <div className="evidence-points">
+              <div><span className="point-number">01</span><p><strong>Trace the clause.</strong> See the exact sentence that triggered a warning.</p></div>
+              <div><span className="point-number">02</span><p><strong>Understand the pattern.</strong> Learn why fees, urgency, and mismatched domains matter.</p></div>
+              <div><span className="point-number">03</span><p><strong>Choose a check.</strong> Get a verification action you can do outside the tool.</p></div>
+            </div>
+          </div>
+          <div className="evidence-map" aria-label="Three-dimensional evidence map showing a document connected to scam signals and verification actions">
+            <div className="map-grid" />
+            <div className="map-orbit orbit-one" />
+            <div className="map-orbit orbit-two" />
+            <div className="map-line line-one" />
+            <div className="map-line line-two" />
+            <div className="map-line line-three" />
+            <div className="map-node node-document"><FileText size={19} /><span>Offer letter</span></div>
+            <div className="map-node node-fee"><CreditCard size={17} /><span>Training fee</span><small>high signal</small></div>
+            <div className="map-node node-domain"><MailWarning size={17} /><span>Email mismatch</span><small>check source</small></div>
+            <div className="map-node node-action"><ShieldCheck size={17} /><span>Call official site</span><small>next action</small></div>
+            <div className="map-caption"><span className="caption-pulse" /> interactive proof trail <span>01 / 03</span></div>
+          </div>
+        </section>
+
         {scanState === "ready" && (
           <section className="scan-section section-wrap" aria-labelledby="scan-heading">
             <div className="section-label"><span>02</span> Start with an offer</div>

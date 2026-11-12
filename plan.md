@@ -7,6 +7,8 @@ OfferGuard is a frontend-first, privacy-first website prototype for students che
 - Build the public experience as a single responsive React route at `/` using the existing Vite/Tailwind starter.
 - Create a focused dashboard view with two states: ready-to-scan upload and completed analysis. The sample offer button runs the same progress flow as upload, so evaluators can experience the product without supplying a PDF.
 - Keep the prototype deterministic and transparent: the sample result contains a 62/100 elevated risk score, six explainable findings, highlighted offer snippets, and a three-step verification checklist. A user PDF is accepted in the browser, shown as the selected file, and routed through the same demo scan flow; this prototype does not claim to extract or retain PDF contents yet.
+- Differentiate from generic fake-letter checkers with an evidence map: the interface connects the exact clause, the scam pattern it suggests, and the external verification action a student should take.
+- Add a lightweight CSS 3D proof-trail visual to the homepage. It uses perspective, floating evidence nodes, orbit lines, and a document anchor rather than a heavyweight 3D engine, so it stays fast and legible on mobile.
 - Use Lucide icons, CSS shapes, and editorial layout instead of external image dependencies. Use the proposal's light blue canvas, deep navy ink, mint action color, and warm red warning accents.
 - Keep the starter's server/database helpers untouched because the approved first stage is static and stateless. Publish as a static Vite build from `dist/public`.
 - Add `public/manus-routes.json` with the complete current page route set.
