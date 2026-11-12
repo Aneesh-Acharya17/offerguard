@@ -21,6 +21,10 @@ import {
   Upload,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import * as pdfjsLib from "pdfjs-dist";
+import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 type ScanState = "ready" | "scanning" | "complete";
 
@@ -96,6 +100,66 @@ const findings: Finding[] = [
     tone: "amber",
   },
 ];
+
+const sampleOfferText = `Northstar Labs internship offer. A one-time training registration fee of ₹2,499 is required before your joining date. Please transfer the refundable laptop security deposit today to reserve your kit. This offer expires at 6:00 PM today. Contact hiring.team.careers@gmail.com. Do not share this offer with anyone until your position is confirmed.`;
+
+type AnalysisResult = {
+  score: number;
+  level: string;
+  summary: string;
+  findings: Finding[];
+};
+
+const excerptAround = (text: string, pattern: RegExp) => {
+  const match = text.match(pattern);
+  if (!match || match.index === undefined) return text.trim().slice(0, 170);
+  const start = Math.max(0, match.index - 45);
+  const end = Math.min(text.length, match.index + match[0].length + 95);
+  return `${start > 0 ? "…" : ""}${text.slice(start, end).replace(/\s+/g, " ").trim()}${end < text.length ? "…" : ""}`;
+};
+
+const analyzeOfferText = (rawText: string): AnalysisResult => {
+  const text = rawText.replace(/\s+/g, " ").trim();
+  const checks: Array<Finding | null> = [
+    /(?:training|registration|onboarding|processing).{0,80}(?:fee|charge|payment|deposit)|(?:pay|transfer|send).{0,45}(?:fee|charge|deposit)/i.test(text)
+      ? { ...findings[0], excerpt: excerptAround(text, /(?:training|registration|onboarding|processing).{0,80}(?:fee|charge|payment|deposit)|(?:pay|transfer|send).{0,45}(?:fee|charge|deposit)/i) }
+      : null,
+    /(?:laptop|equipment|kit|security deposit).{0,65}(?:deposit|charge|payment|fee)|(?:deposit|charge).{0,65}(?:laptop|equipment|kit)/i.test(text)
+      ? { ...findings[1], excerpt: excerptAround(text, /(?:laptop|equipment|kit|security deposit).{0,65}(?:deposit|charge|payment|fee)|(?:deposit|charge).{0,65}(?:laptop|equipment|kit)/i) }
+      : null,
+    /(?:today|immediately|urgent|expires|act now|within \d+ hours|limited time|do not delay)/i.test(text)
+      ? { ...findings[2], excerpt: excerptAround(text, /(?:today|immediately|urgent|expires|act now|within \d+ hours|limited time|do not delay)/i) }
+      : null,
+    /[\w.+-]+@(gmail|yahoo|outlook|hotmail)\.(com|in|co\.[a-z]{2})/i.test(text)
+      ? { ...findings[3], excerpt: excerptAround(text, /[\w.+-]+@(gmail|yahoo|outlook|hotmail)\.(com|in|co\.[a-z]{2})/i) }
+      : null,
+    /(?:company|labs|technologies|solutions|pvt|private limited|inc\.?|llc).{0,100}(?:official|authorized|division|registration|address)|(?:gmail|yahoo|outlook|hotmail)\./i.test(text)
+      ? { ...findings[4], excerpt: excerptAround(text, /(?:company|labs|technologies|solutions|pvt|private limited|inc\.?|llc).{0,100}(?:official|authorized|division|registration|address)|(?:gmail|yahoo|outlook|hotmail)\./i) }
+      : null,
+    /(?:do not share|confidential|immediately|urgent|act now|do not delay|must respond|final warning)/i.test(text)
+      ? { ...findings[5], excerpt: excerptAround(text, /(?:do not share|confidential|immediately|urgent|act now|do not delay|must respond|final warning)/i) }
+      : null,
+  ];
+  const detected = checks.filter((finding): finding is Finding => finding !== null);
+  const score = Math.min(94, detected.length === 0 ? 8 : 8 + detected.length * 14 + (detected.length >= 3 ? 12 : 0));
+  const level = score >= 66 ? "High attention" : score >= 35 ? "Worth checking" : "Low signal";
+  const summary = detected.length === 0
+    ? "No common scam patterns were found in the extracted text. Still verify the recruiter and company through official channels."
+    : `${detected.length} signal${detected.length === 1 ? "" : "s"} found in the extracted text. Review the evidence below before you reply or pay.`;
+  return { score, level, summary, findings: detected };
+};
+
+const extractPdfText = async (file: File) => {
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+  const pages: string[] = [];
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const content = await page.getTextContent();
+    pages.push(content.items.map((item) => ("str" in item ? item.str : "")).join(" "));
+  }
+  return pages.join(" ").trim();
+};
 
 const checklist = [
   {
@@ -174,6 +238,8 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
   const [openFinding, setOpenFinding] = useState(0);
   const [checkedSteps, setCheckedSteps] = useState<number[]>([]);
+  const [analysis, setAnalysis] = useState<AnalysisResult>(() => analyzeOfferText(sampleOfferText));
+  const [analysisError, setAnalysisError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -193,24 +259,39 @@ export default function Home() {
     return () => window.clearInterval(interval);
   }, [scanState]);
 
-  const beginScan = (name: string) => {
+  const beginScan = (name: string, text: string) => {
     setSelectedName(name);
+    setAnalysis(analyzeOfferText(text));
+    setAnalysisError("");
     setScanStep(0);
     setOpenFinding(0);
     setCheckedSteps([]);
     setScanState("scanning");
   };
 
-  const handleFile = (file?: File) => {
+  const handleFile = async (file?: File) => {
     if (!file) return;
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) return;
-    beginScan(file.name);
+    try {
+      const extractedText = await extractPdfText(file);
+      if (!extractedText) throw new Error("No selectable text found");
+      beginScan(file.name, extractedText);
+    } catch {
+      setSelectedName(file.name);
+      setAnalysisError("We could not extract selectable text from this PDF. It may be a scanned image or encrypted document, so OfferGuard will not invent a result.");
+      setScanStep(0);
+      setOpenFinding(0);
+      setCheckedSteps([]);
+      setScanState("scanning");
+    }
   };
 
   const reset = () => {
     setScanState("ready");
     setScanStep(0);
     setSelectedName("");
+    setAnalysis(analyzeOfferText(sampleOfferText));
+    setAnalysisError("");
     setOpenFinding(0);
     setCheckedSteps([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -318,7 +399,7 @@ export default function Home() {
                 <div className="demo-topline"><Sparkles size={16} /> Or skip the upload</div>
                 <h3>See how the red flags get explained.</h3>
                 <p>Try our sample internship letter. It contains the kinds of signals OfferGuard is built to surface.</p>
-                <button className="mint-button" type="button" onClick={() => beginScan("sample-internship-offer.pdf")}>
+                <button className="mint-button" type="button" onClick={() => beginScan("sample-internship-offer.pdf", sampleOfferText)}>
                   Scan the sample <ArrowRight size={17} />
                 </button>
                 <div className="sample-paper" aria-hidden="true">
@@ -368,27 +449,28 @@ export default function Home() {
             <div className="results-intro">
               <div>
                 <p className="mono-label">ANALYSIS COMPLETE · {selectedName}</p>
-                <h2 id="results-heading">There are a few things worth checking.</h2>
-                <p>Not a verdict. A map of the signals that deserve a closer look before you make a decision.</p>
+                <h2 id="results-heading">{analysisError ? "We could not read enough text to analyze this file." : analysis.findings.length > 0 ? "There are a few things worth checking." : "No common red flags found in the extracted text."}</h2>
+                <p>{analysisError || analysis.summary}</p>
               </div>
-              <div className="result-stamp"><CheckCircle2 size={15} /> Review ready</div>
+              <div className="result-stamp">{analysisError ? <><CircleHelp size={15} /> Needs another file</> : <><CheckCircle2 size={15} /> Review ready</>}</div>
             </div>
 
             <div className="results-grid">
               <aside className="score-card">
                 <div className="score-card-head"><span>OVERALL SIGNAL</span><CircleHelp size={16} /></div>
-                <RiskRing score={62} />
-                <div className="score-copy"><strong>Elevated risk</strong><span>Several signals should be verified independently.</span></div>
+                <RiskRing score={analysisError ? 0 : analysis.score} />
+                <div className="score-copy"><strong>{analysisError ? "No result" : analysis.level}</strong><span>{analysisError ? "This file did not expose selectable text for the browser parser." : analysis.summary}</span></div>
                 <div className="score-divider" />
-                <div className="signal-count"><span><span className="signal-dot red" /> High attention</span><strong>3</strong></div>
-                <div className="signal-count"><span><span className="signal-dot amber" /> Worth checking</span><strong>3</strong></div>
+                <div className="signal-count"><span><span className="signal-dot red" /> High attention</span><strong>{analysis.findings.filter((finding) => finding.tone === "red").length}</strong></div>
+                <div className="signal-count"><span><span className="signal-dot amber" /> Worth checking</span><strong>{analysis.findings.filter((finding) => finding.tone === "amber").length}</strong></div>
                 <div className="score-note"><Shield size={15} /> OfferGuard explains patterns; you make the call.</div>
               </aside>
 
               <div className="findings-column">
-                <div className="findings-heading"><h3>What stood out</h3><span>06 signals</span></div>
+                <div className="findings-heading"><h3>What stood out</h3><span>{String(analysis.findings.length).padStart(2, "0")} signals</span></div>
                 <div className="finding-list">
-                  {findings.map((finding, index) => {
+                  {analysis.findings.length === 0 && <div className="empty-findings"><ShieldCheck size={20} /><strong>{analysisError ? "No findings generated" : "No matching patterns detected"}</strong><span>{analysisError ? "Try a text-based PDF. Scanned images need OCR before they can be checked." : "That is not proof an offer is safe. Verify the sender and company independently."}</span></div>}
+                  {analysis.findings.map((finding, index) => {
                     const Icon = finding.icon;
                     const isOpen = openFinding === index;
                     return (

@@ -38,3 +38,9 @@
 - [x] The homepage explains that OfferGuard connects a suspicious clause to the signal behind it and the verification action a student can take, rather than only returning a fake/safe label.
 - [x] The homepage includes a lightweight CSS 3D proof-trail visual with a document anchor, risk-signal nodes, connecting lines, and a next-action node.
 - [x] The 3D visual remains readable and contained at desktop and mobile widths without adding a heavyweight rendering dependency.
+
+## 8. Analyze uploaded PDFs instead of returning a fixed demo result
+- [x] A selectable-text PDF is parsed in-browser with PDF.js before analysis, and the resulting findings are based on that document's extracted text.
+- [x] The analyzer checks explainable signals for payment requests, equipment deposits, urgency, free-mail domains, possible impersonation gaps, and pushy wording, and shows matching excerpts.
+- [x] The results score, summary, signal counts, and finding list change with the analyzed text; the built-in sample regression produced six signals and a 94/100 high-attention score.
+- [x] Image-only or encrypted PDFs do not receive a fabricated default result; they show a clear unreadable-file message instead.
