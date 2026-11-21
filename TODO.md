@@ -44,3 +44,9 @@
 - [x] The analyzer checks explainable signals for payment requests, equipment deposits, urgency, free-mail domains, possible impersonation gaps, and pushy wording, and shows matching excerpts.
 - [x] The results score, summary, signal counts, and finding list change with the analyzed text; the built-in sample regression produced six signals and a 94/100 high-attention score.
 - [x] Image-only or encrypted PDFs do not receive a fabricated default result; they show a clear unreadable-file message instead.
+
+## 9. Preserve results across refresh without retaining the PDF
+- [x] Completed analysis metadata is stored only in browser session storage, allowing a normal refresh to reopen the results in the same tab.
+- [x] Stored findings rehydrate their display icons safely instead of serializing React component objects.
+- [x] New check clears the session result and returns to the upload view; privacy copy explains that the PDF itself is not saved.
+- [x] Regression-tested: completed sample result restored as 94/100 after refresh, then New check returned to the upload view.

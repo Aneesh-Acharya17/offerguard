@@ -161,6 +161,34 @@ const extractPdfText = async (file: File) => {
   return pages.join(" ").trim();
 };
 
+const SCAN_SESSION_KEY = "offerguard:last-analysis";
+type StoredScan = {
+  selectedName: string;
+  analysis: AnalysisResult;
+  analysisError: string;
+};
+
+const readStoredScan = (): StoredScan | null => {
+  try {
+    const raw = window.sessionStorage.getItem(SCAN_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredScan;
+    if (!parsed.selectedName || !parsed.analysis || !Array.isArray(parsed.analysis.findings)) return null;
+    return {
+      ...parsed,
+      analysis: {
+        ...parsed.analysis,
+        findings: parsed.analysis.findings.map((finding) => ({
+          ...finding,
+          icon: findings.find((item) => item.title === finding.title)?.icon ?? AlertTriangle,
+        })),
+      },
+    };
+  } catch {
+    return null;
+  }
+};
+
 const checklist = [
   {
     number: "01",
@@ -221,7 +249,7 @@ function AppHeader({ onReset }: { onReset: () => void }) {
       </a>
       <div className="header-actions">
         <span className="privacy-pill">
-          <LockKeyhole size={14} /> No data kept
+          <LockKeyhole size={14} /> No PDF kept
         </span>
         <button className="text-button" onClick={onReset} type="button">
           <RotateCcw size={15} /> New check
@@ -232,15 +260,24 @@ function AppHeader({ onReset }: { onReset: () => void }) {
 }
 
 export default function Home() {
-  const [scanState, setScanState] = useState<ScanState>("ready");
+  const [scanState, setScanState] = useState<ScanState>(() => (readStoredScan() ? "complete" : "ready"));
   const [scanStep, setScanStep] = useState(0);
-  const [selectedName, setSelectedName] = useState("");
+  const [selectedName, setSelectedName] = useState(() => readStoredScan()?.selectedName ?? "");
   const [isDragging, setIsDragging] = useState(false);
   const [openFinding, setOpenFinding] = useState(0);
   const [checkedSteps, setCheckedSteps] = useState<number[]>([]);
-  const [analysis, setAnalysis] = useState<AnalysisResult>(() => analyzeOfferText(sampleOfferText));
-  const [analysisError, setAnalysisError] = useState("");
+  const [analysis, setAnalysis] = useState<AnalysisResult>(() => readStoredScan()?.analysis ?? analyzeOfferText(sampleOfferText));
+  const [analysisError, setAnalysisError] = useState(() => readStoredScan()?.analysisError ?? "");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (scanState !== "complete" || !selectedName) return;
+    try {
+      window.sessionStorage.setItem(SCAN_SESSION_KEY, JSON.stringify({ selectedName, analysis, analysisError }));
+    } catch {
+      // Session storage can be disabled; the in-memory result still remains usable.
+    }
+  }, [analysis, analysisError, scanState, selectedName]);
 
   useEffect(() => {
     if (scanState !== "scanning") return;
@@ -260,6 +297,11 @@ export default function Home() {
   }, [scanState]);
 
   const beginScan = (name: string, text: string) => {
+    try {
+      window.sessionStorage.removeItem(SCAN_SESSION_KEY);
+    } catch {
+      // Ignore storage failures; the new scan still starts in memory.
+    }
     setSelectedName(name);
     setAnalysis(analyzeOfferText(text));
     setAnalysisError("");
@@ -294,6 +336,11 @@ export default function Home() {
     setAnalysisError("");
     setOpenFinding(0);
     setCheckedSteps([]);
+    try {
+      window.sessionStorage.removeItem(SCAN_SESSION_KEY);
+    } catch {
+      // Ignore storage failures; reset the in-memory view regardless.
+    }
     if (fileInputRef.current) fileInputRef.current.value = "";
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -391,7 +438,7 @@ export default function Home() {
                 </div>
                 <div className="privacy-callout">
                   <LockKeyhole size={17} />
-                  <div><strong>Private by design</strong><span>We process on request and don’t keep a copy between checks.</span></div>
+                  <div><strong>Private by design</strong><span>We process the PDF in your browser. Only this result stays in the tab until you start a new check.</span></div>
                 </div>
               </div>
 
@@ -547,7 +594,7 @@ export default function Home() {
       <footer className="site-footer section-wrap">
         <div className="footer-brand"><LogoMark /><span>OfferGuard</span></div>
         <p>Built to help students pause, verify, and stay in control.</p>
-        <span className="footer-status"><span /> No account · No history</span>
+        <span className="footer-status"><span /> No account · PDF not saved</span>
       </footer>
     </div>
   );
