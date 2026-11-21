@@ -499,7 +499,19 @@ export default function Home() {
                 <h2 id="results-heading">{analysisError ? "We could not read enough text to analyze this file." : analysis.findings.length > 0 ? "There are a few things worth checking." : "No common red flags found in the extracted text."}</h2>
                 <p>{analysisError || analysis.summary}</p>
               </div>
-              <div className="result-stamp">{analysisError ? <><CircleHelp size={15} /> Needs another file</> : <><CheckCircle2 size={15} /> Review ready</>}</div>
+              <div className="results-actions">
+                <label className="outline-button result-upload">
+                  <Upload size={16} /> Choose another PDF
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    onChange={(event) => { void handleFile(event.target.files?.[0]); }}
+                    aria-label="Choose another offer PDF"
+                  />
+                </label>
+                <div className="result-stamp">{analysisError ? <><CircleHelp size={15} /> Needs another file</> : <><CheckCircle2 size={15} /> Review ready</>}</div>
+              </div>
             </div>
 
             <div className="results-grid">

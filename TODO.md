@@ -50,3 +50,4 @@
 - [x] Stored findings rehydrate their display icons safely instead of serializing React component objects.
 - [x] New check clears the session result and returns to the upload view; privacy copy explains that the PDF itself is not saved.
 - [x] Regression-tested: completed sample result restored as 94/100 after refresh, then New check returned to the upload view.
+- [x] Completed results now keep a visible Choose another PDF control, and the sample regression confirmed it appears beside Review ready.

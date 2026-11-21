@@ -11,6 +11,7 @@ OfferGuard is a frontend-first, privacy-first website prototype for students che
 - Add a lightweight CSS 3D proof-trail visual to the homepage. It uses perspective, floating evidence nodes, orbit lines, and a document anchor rather than a heavyweight 3D engine, so it stays fast and legible on mobile.
 - Replace the upload demo-only path with in-browser PDF.js text extraction and deterministic, explainable heuristics for payment requests, equipment deposits, urgency, free-mail domains, impersonation gaps, and pushy wording. If a PDF has no selectable text, show an honest unreadable-file state instead of a default verdict.
 - Keep the completed result across a normal browser refresh using session-only metadata and findings. Never store the uploaded PDF itself; New check clears the session result and returns to upload.
+- Keep a Choose another PDF control visible in the completed results header so users can move from the sample to a real letter without losing the evidence desk.
 - Use Lucide icons, CSS shapes, and editorial layout instead of external image dependencies. Use the proposal's light blue canvas, deep navy ink, mint action color, and warm red warning accents.
 - Keep the starter's server/database helpers untouched because the approved first stage is static and stateless. Publish as a static Vite build from `dist/public`.
 - Add `public/manus-routes.json` with the complete current page route set.
