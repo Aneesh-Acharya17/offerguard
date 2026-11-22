@@ -264,6 +264,7 @@ export default function Home() {
   const [scanStep, setScanStep] = useState(0);
   const [selectedName, setSelectedName] = useState(() => readStoredScan()?.selectedName ?? "");
   const [isDragging, setIsDragging] = useState(false);
+  const [activeMapNode, setActiveMapNode] = useState("document");
   const [openFinding, setOpenFinding] = useState(0);
   const [checkedSteps, setCheckedSteps] = useState<number[]>([]);
   const [analysis, setAnalysis] = useState<AnalysisResult>(() => readStoredScan()?.analysis ?? analyzeOfferText(sampleOfferText));
@@ -405,18 +406,26 @@ export default function Home() {
               <div><span className="point-number">03</span><p><strong>Choose a check.</strong> Get a verification action you can do outside the tool.</p></div>
             </div>
           </div>
-          <div className="evidence-map" aria-label="Three-dimensional evidence map showing a document connected to scam signals and verification actions">
+          <div className={`evidence-map active-${activeMapNode}`} aria-label="Interactive evidence map showing a document connected to scam signals and verification actions">
             <div className="map-grid" />
             <div className="map-orbit orbit-one" />
             <div className="map-orbit orbit-two" />
             <div className="map-line line-one" />
             <div className="map-line line-two" />
             <div className="map-line line-three" />
-            <div className="map-node node-document"><FileText size={19} /><span>Offer letter</span></div>
-            <div className="map-node node-fee"><CreditCard size={17} /><span>Training fee</span><small>high signal</small></div>
-            <div className="map-node node-domain"><MailWarning size={17} /><span>Email mismatch</span><small>check source</small></div>
-            <div className="map-node node-action"><ShieldCheck size={17} /><span>Call official site</span><small>next action</small></div>
-            <div className="map-caption"><span className="caption-pulse" /> interactive proof trail <span>01 / 03</span></div>
+            <button className="map-node node-document" type="button" onClick={() => setActiveMapNode("document")} onMouseEnter={() => setActiveMapNode("document")} onFocus={() => setActiveMapNode("document")} aria-label="Show the uploaded offer letter">
+              <FileText size={19} /><span>Offer letter</span>
+            </button>
+            <button className="map-node node-fee" type="button" onClick={() => setActiveMapNode("fee")} onMouseEnter={() => setActiveMapNode("fee")} onFocus={() => setActiveMapNode("fee")} aria-label="Show the training fee signal">
+              <CreditCard size={17} /><span>Training fee</span><small>high signal</small>
+            </button>
+            <button className="map-node node-domain" type="button" onClick={() => setActiveMapNode("domain")} onMouseEnter={() => setActiveMapNode("domain")} onFocus={() => setActiveMapNode("domain")} aria-label="Show the email mismatch signal">
+              <MailWarning size={17} /><span>Email mismatch</span><small>check source</small>
+            </button>
+            <button className="map-node node-action" type="button" onClick={() => setActiveMapNode("action")} onMouseEnter={() => setActiveMapNode("action")} onFocus={() => setActiveMapNode("action")} aria-label="Show the next verification action">
+              <ShieldCheck size={17} /><span>Call official site</span><small>next action</small>
+            </button>
+            <div className="map-caption"><span className="caption-pulse" /> {activeMapNode === "document" ? "trace the clause" : activeMapNode === "fee" ? "spot the payment signal" : activeMapNode === "domain" ? "check the sender" : "choose your next action"} <span>01 / 03</span></div>
           </div>
         </section>
 

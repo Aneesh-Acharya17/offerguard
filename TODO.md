@@ -57,3 +57,8 @@
 - [x] PDF pages are extracted in parallel, and the completed results state waits until extraction is ready.
 - [x] Selecting another PDF invalidates an older in-flight extraction so stale results cannot replace the newer file's state.
 - [x] Unreadable-file handling clears previous findings instead of leaving stale signals underneath the honest error message.
+
+## 11. Add interactive frontend motion
+- [x] Evidence-map nodes respond to hover, keyboard focus, and click with visible active states.
+- [x] Selecting a signal highlights and pulses its connected evidence line and updates the map caption.
+- [x] Page sections and controls use restrained motion while preserving a reduced-motion accessibility fallback.
