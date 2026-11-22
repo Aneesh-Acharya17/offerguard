@@ -62,3 +62,8 @@
 - [x] Evidence-map nodes respond to hover, keyboard focus, and click with visible active states.
 - [x] Selecting a signal highlights and pulses its connected evidence line and updates the map caption.
 - [x] Page sections and controls use restrained motion while preserving a reduced-motion accessibility fallback.
+
+## 12. Animate the whole website experience
+- [x] Header, hero, evidence content, upload panels, sample letter, scan progress, results cards, checklist, education cards, how-it-works cards, and footer now have coordinated motion or hover feedback.
+- [x] Ambient background motion and staggered reveals add energy without changing the privacy-first editorial layout.
+- [x] The upload-state regression still renders the dropzone, sample panel, evidence map, and how-it-works section correctly after reset.
