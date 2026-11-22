@@ -51,3 +51,9 @@
 - [x] New check clears the session result and returns to the upload view; privacy copy explains that the PDF itself is not saved.
 - [x] Regression-tested: completed sample result restored as 94/100 after refresh, then New check returned to the upload view.
 - [x] Completed results now keep a visible Choose another PDF control, and the sample regression confirmed it appears beside Review ready.
+
+## 10. Keep PDF scanning responsive
+- [x] Selecting a PDF shows the scanning UI immediately instead of awaiting complete text extraction.
+- [x] PDF pages are extracted in parallel, and the completed results state waits until extraction is ready.
+- [x] Selecting another PDF invalidates an older in-flight extraction so stale results cannot replace the newer file's state.
+- [x] Unreadable-file handling clears previous findings instead of leaving stale signals underneath the honest error message.

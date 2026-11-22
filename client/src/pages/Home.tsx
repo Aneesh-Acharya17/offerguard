@@ -152,12 +152,12 @@ const analyzeOfferText = (rawText: string): AnalysisResult => {
 const extractPdfText = async (file: File) => {
   const buffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
-  const pages: string[] = [];
-  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+  const pages = await Promise.all(Array.from({ length: pdf.numPages }, async (_, index) => {
+    const pageNumber = index + 1;
     const page = await pdf.getPage(pageNumber);
     const content = await page.getTextContent();
-    pages.push(content.items.map((item) => ("str" in item ? item.str : "")).join(" "));
-  }
+    return content.items.map((item) => ("str" in item ? item.str : "")).join(" ");
+  }));
   return pages.join(" ").trim();
 };
 
@@ -268,7 +268,9 @@ export default function Home() {
   const [checkedSteps, setCheckedSteps] = useState<number[]>([]);
   const [analysis, setAnalysis] = useState<AnalysisResult>(() => readStoredScan()?.analysis ?? analyzeOfferText(sampleOfferText));
   const [analysisError, setAnalysisError] = useState(() => readStoredScan()?.analysisError ?? "");
+  const [extractionReady, setExtractionReady] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scanRequestRef = useRef(0);
 
   useEffect(() => {
     if (scanState !== "complete" || !selectedName) return;
@@ -284,9 +286,9 @@ export default function Home() {
 
     const interval = window.setInterval(() => {
       setScanStep((current) => {
-        if (current >= scanSteps.length - 1) {
+        if (current >= scanSteps.length - 1 && extractionReady) {
           window.clearInterval(interval);
-          window.setTimeout(() => setScanState("complete"), 650);
+          window.setTimeout(() => setScanState("complete"), 250);
           return current;
         }
         return current + 1;
@@ -294,7 +296,7 @@ export default function Home() {
     }, 730);
 
     return () => window.clearInterval(interval);
-  }, [scanState]);
+  }, [extractionReady, scanState]);
 
   const beginScan = (name: string, text: string) => {
     try {
@@ -305,27 +307,41 @@ export default function Home() {
     setSelectedName(name);
     setAnalysis(analyzeOfferText(text));
     setAnalysisError("");
+    setExtractionReady(true);
     setScanStep(0);
     setOpenFinding(0);
     setCheckedSteps([]);
     setScanState("scanning");
   };
 
-  const handleFile = async (file?: File) => {
+  const handleFile = (file?: File) => {
     if (!file) return;
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) return;
+    const requestId = scanRequestRef.current + 1;
+    scanRequestRef.current = requestId;
     try {
-      const extractedText = await extractPdfText(file);
-      if (!extractedText) throw new Error("No selectable text found");
-      beginScan(file.name, extractedText);
+      window.sessionStorage.removeItem(SCAN_SESSION_KEY);
     } catch {
-      setSelectedName(file.name);
-      setAnalysisError("We could not extract selectable text from this PDF. It may be a scanned image or encrypted document, so OfferGuard will not invent a result.");
-      setScanStep(0);
-      setOpenFinding(0);
-      setCheckedSteps([]);
-      setScanState("scanning");
+      // Ignore storage failures; the new scan still starts in memory.
     }
+    setSelectedName(file.name);
+    setAnalysis(analyzeOfferText(""));
+    setAnalysisError("");
+    setExtractionReady(false);
+    setScanStep(0);
+    setOpenFinding(0);
+    setCheckedSteps([]);
+    setScanState("scanning");
+    void extractPdfText(file).then((extractedText) => {
+      if (requestId !== scanRequestRef.current) return;
+      if (!extractedText) throw new Error("No selectable text found");
+      setAnalysis(analyzeOfferText(extractedText));
+      setExtractionReady(true);
+    }).catch(() => {
+      if (requestId !== scanRequestRef.current) return;
+      setAnalysisError("We could not extract selectable text from this PDF. It may be a scanned image or encrypted document, so OfferGuard will not invent a result.");
+      setExtractionReady(true);
+    });
   };
 
   const reset = () => {
@@ -334,6 +350,7 @@ export default function Home() {
     setSelectedName("");
     setAnalysis(analyzeOfferText(sampleOfferText));
     setAnalysisError("");
+    setExtractionReady(true);
     setOpenFinding(0);
     setCheckedSteps([]);
     try {
